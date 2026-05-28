@@ -54,12 +54,12 @@ export default function Home() {
         const res = await fetch(`${apiUrl}/api/user/journeys`);
         if (res.ok) {
           const data = await res.json();
-          setHistory(data);
+          setHistory(Array.isArray(data) ? data : []);
           
           // Calculate dynamic safety score average from completed runs
-          const completed = data.filter((j: any) => j.status === "completed" && j.summary && j.summary.safety_rating);
+          const completed = (Array.isArray(data) ? data : []).filter((j: any) => j?.status === "completed" && j?.summary && j?.summary?.safety_rating);
           if (completed.length > 0) {
-            const avg = completed.reduce((sum: number, curr: any) => sum + curr.summary.safety_rating, 0) / completed.length;
+            const avg = completed.reduce((sum: number, curr: any) => sum + (curr?.summary?.safety_rating || 0), 0) / completed.length;
             setSafetyScore(Math.round(avg));
           }
         }
@@ -196,7 +196,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="space-y-3">
-            {history.map((j) => (
+            {(history || []).map((j) => (
               <div
                 key={j.id}
                 className="bg-guardian-card border border-guardian-border rounded-xl p-4 hover:border-guardian-border/80 transition relative"

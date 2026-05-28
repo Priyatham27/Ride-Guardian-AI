@@ -130,14 +130,14 @@ export default function ActiveJourney() {
           setSpeed(nextSpeed);
 
           // Deplete fuel based on distance
-          const totalDist = routeData.route_details.distance_km;
+          const totalDist = routeData?.route_details?.distance_km || 1;
           const consumed = (nextPt[3] / totalDist) * 80;
           setFuelPct(max(10, round(90 - consumed)));
 
           // Track active segment description
-          for (const seg of routeData.route_details.segments) {
-            if (nextPt[3] >= seg.start_km && nextPt[3] <= seg.end_km) {
-              setCurrentSegment(seg.name);
+          for (const seg of (routeData?.route_details?.segments || [])) {
+            if (nextPt[3] >= seg?.start_km && nextPt[3] <= seg?.end_km) {
+              setCurrentSegment(seg?.name);
             }
           }
 
@@ -321,11 +321,11 @@ export default function ActiveJourney() {
       <section className="h-[200px] w-full rounded-xl overflow-hidden border border-guardian-border mb-4 bg-guardian-card shadow-inner">
         {routeData && (
           <Map
-            path={routeData.route_details.path}
-            segments={routeData.route_details.segments}
-            safetyReport={routeData.safety_report}
+            path={routeData?.route_details?.path || []}
+            segments={routeData?.route_details?.segments || []}
+            safetyReport={routeData?.safety_report}
             currentCoords={currentCoords}
-            fuelStations={routeData.fuel_stations}
+            fuelStations={routeData?.fuel_stations || []}
           />
         )}
       </section>

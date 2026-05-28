@@ -127,14 +127,14 @@ export default function LeafletMap({
 
   // Render a list of polyline segments based on risk ratings
   const renderSegments = () => {
-    if (!segments || segments.length === 0) return null;
+    if (!segments || !Array.isArray(segments) || segments.length === 0) return null;
 
     return segments.map((seg) => {
       // Find matching safety advisory to get color rating
       let color = "#2979FF"; // Default blue
-      if (safetyReport && safetyReport.segment_advisories) {
+      if (safetyReport && Array.isArray(safetyReport.segment_advisories)) {
         const adv = safetyReport.segment_advisories.find(
-          (a: any) => a.segment_id === seg.id
+          (a: any) => a?.segment_id === seg?.id
         );
         if (adv) {
           if (adv.status === "Safe") color = "#00E676";      // Green
@@ -145,11 +145,11 @@ export default function LeafletMap({
 
       // Slice the coordinates belonging to this segment
       // Path coordinates format: [lat, lon, label, km_mark]
-      const segPoints = path.filter(
-        (pt) => pt[3] >= seg.start_km && pt[3] <= seg.end_km
+      const segPoints = (path || []).filter(
+        (pt) => pt && pt[3] >= seg?.start_km && pt[3] <= seg?.end_km
       );
       
-      const polyCoords = segPoints.map((pt) => [pt[0], pt[1]] as [number, number]);
+      const polyCoords = (segPoints || []).map((pt) => [pt[0], pt[1]] as [number, number]);
 
       if (polyCoords.length < 2) return null;
 
@@ -211,7 +211,7 @@ export default function LeafletMap({
         )}
 
         {/* Open Fuel Station Markers */}
-        {fuelStations.map((st, idx) => {
+        {(fuelStations || []).map((st, idx) => {
           if (st.status !== "Open") return null;
           return (
             <Marker key={idx} position={[st.coords[0], st.coords[1]]} icon={fuelIcon}>

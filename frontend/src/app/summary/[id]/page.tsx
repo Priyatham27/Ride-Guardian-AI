@@ -64,7 +64,13 @@ export default function RideSummary() {
     );
   }
 
-  const s = summary!;
+  const s = summary || {
+    narrative: "No narrative available.",
+    fatigue_index_pct: 0,
+    fuel_accuracy_pct: 0,
+    safety_rating: 0,
+    recommendations: []
+  };
 
   return (
     <main className="min-h-screen bg-guardian-bg text-guardian-text px-4 py-8 max-w-md mx-auto flex flex-col justify-between">
@@ -119,7 +125,7 @@ export default function RideSummary() {
         </div>
 
         <div className="space-y-3 text-xs leading-relaxed">
-          {s.recommendations.map((rec, idx) => (
+          {(s.recommendations || []).map((rec, idx) => (
             <div key={idx} className="flex gap-3 items-start">
               <span className="w-5 h-5 rounded-full bg-slate-950/80 border border-guardian-border/60 flex items-center justify-center text-[10px] font-bold text-guardian-safe shrink-0 mt-0.5">
                 {idx + 1}

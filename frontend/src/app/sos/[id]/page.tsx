@@ -103,17 +103,18 @@ export default function SOSScreen() {
   }
 
   // Fallback defaults if backend is offline
-  const incident = statusData?.incident || {
-    trigger_type: "inactivity",
-    triggered_at: new Date().toISOString(),
-    last_known_lat: 15.4847,
-    last_known_lon: 78.4828,
-    sos_dispatched: true,
-    contacts_notified: [
+  const rawIncident = statusData?.incident;
+  const incident = {
+    trigger_type: rawIncident?.trigger_type || "inactivity",
+    triggered_at: rawIncident?.triggered_at || new Date().toISOString(),
+    last_known_lat: rawIncident?.last_known_lat ?? 15.4847,
+    last_known_lon: rawIncident?.last_known_lon ?? 78.4828,
+    sos_dispatched: rawIncident?.sos_dispatched ?? true,
+    contacts_notified: rawIncident?.contacts_notified || [
       { name: "Priya (Sister)", email: "priyathamprime7@gmail.com", success: true, provider: "smtp" },
       { name: "Ravi (Friend)", email: "kotipallipriyatham85@gmail.com", success: true, provider: "mock" }
     ],
-    nearest_hospital: {
+    nearest_hospital: rawIncident?.nearest_hospital || {
       name: "Government Area Hospital - Nandyal Bypass",
       phone: "+918514221100",
       distance_km: 2.1,
@@ -191,7 +192,7 @@ export default function SOSScreen() {
         <h2 className="text-[10px] text-guardian-muted uppercase font-bold tracking-wider mb-3">Email Dispatch Status</h2>
         
         <div className="space-y-2.5">
-          {incident.contacts_notified.map((c, idx) => (
+          {(incident.contacts_notified || []).map((c, idx) => (
             <div key={idx} className="flex justify-between items-center text-xs">
               <span className="font-semibold text-guardian-text">{c.name}</span>
               <div className="flex items-center gap-1.5">

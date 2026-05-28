@@ -210,7 +210,7 @@ export default function GoogleMap({
     }
 
     // Draw Fuel Station Markers
-    fuelStations.forEach((st) => {
+    (fuelStations || []).forEach((st) => {
       if (st.status === "Open") {
         createCustomMarker(
           st.coords[0],

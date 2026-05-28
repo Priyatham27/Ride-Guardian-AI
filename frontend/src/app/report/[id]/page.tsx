@@ -102,9 +102,18 @@ export default function Report() {
     );
   }
 
-  const { analysis } = data;
-  const safetyReport = analysis.safety_report;
-  const route = analysis.route_details;
+  const analysis = data?.analysis || {} as any;
+  const safetyReport = analysis?.safety_report || {
+    safety_score: 0,
+    ai_summary: "No summary available.",
+    segment_advisories: []
+  };
+  const route = analysis?.route_details || {
+    distance_km: 0,
+    duration_hours: 0,
+    path: [],
+    segments: []
+  };
 
   return (
     <main className="min-h-screen bg-guardian-bg text-guardian-text px-4 py-8 max-w-md mx-auto flex flex-col">
@@ -125,10 +134,10 @@ export default function Report() {
       {/* Map Section */}
       <section className="h-[260px] w-full rounded-xl overflow-hidden border border-guardian-border mb-6 shadow-md bg-guardian-card relative">
         <Map
-          path={route.path}
-          segments={route.segments}
+          path={route?.path || []}
+          segments={route?.segments || []}
           safetyReport={safetyReport}
-          fuelStations={analysis.fuel_stations}
+          fuelStations={analysis?.fuel_stations || []}
         />
         {/* Distance Overlay Chip */}
         <div className="absolute top-3 left-3 bg-slate-950/90 border border-guardian-border px-3 py-1.5 rounded-lg text-[10px] font-bold z-[1000] flex gap-2">
@@ -169,22 +178,22 @@ export default function Report() {
       </section>
 
       {/* Critical Gaps Alerts */}
-      {analysis.fuel_gaps && analysis.fuel_gaps.length > 0 && (
+      {analysis?.fuel_gaps && analysis.fuel_gaps.length > 0 && (
         <section className="mb-6 space-y-3">
           <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-guardian-muted">
             <Fuel size={14} className="text-guardian-warning" />
             <h2>Critical Fuel Windows</h2>
           </div>
-          {analysis.fuel_gaps.map((gap, idx) => (
+          {(analysis.fuel_gaps || []).map((gap, idx) => (
             <div
               key={idx}
               className="bg-guardian-card border border-amber-500/20 rounded-xl p-4 flex gap-3 text-xs leading-relaxed"
             >
               <AlertTriangle className="text-guardian-warning w-5 h-5 shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold block text-amber-400 mb-0.5">Refueling Gap: {gap.gap_distance_km} km</span>
+                <span className="font-bold block text-amber-400 mb-0.5">Refueling Gap: {gap?.gap_distance_km} km</span>
                 <p className="text-guardian-muted text-[11px]">
-                  {gap.message}
+                  {gap?.message}
                 </p>
               </div>
             </div>
@@ -200,9 +209,9 @@ export default function Report() {
         </div>
         
         <div className="space-y-2.5">
-          {route.segments.map((seg, idx) => {
-            const adv = safetyReport.segment_advisories.find(
-              (a: any) => a.segment_id === seg.id
+          {(route?.segments || []).map((seg, idx) => {
+            const adv = (safetyReport?.segment_advisories || []).find(
+              (a: any) => a?.segment_id === seg?.id
             );
             
             let statusColor = "text-guardian-accent";
