@@ -1,0 +1,152 @@
+@import "leaflet/dist/leaflet.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: var(--guardian-bg);
+  --foreground: var(--guardian-text);
+  
+  --guardian-bg: #070B13;
+  --guardian-card: #0E1524;
+  --guardian-border: #1E293B;
+  --guardian-safe: #00E676;      /* Neon safety green */
+  --guardian-warning: #FFA000;   /* Hot amber warning */
+  --guardian-critical: #FF1744;  /* SOS fire-red */
+  --guardian-accent: #2979FF;    /* Active blue accent */
+  --guardian-text: #F8FAFC;      /* Bright white-slate */
+  --guardian-muted: #94A3B8;     /* Muted gray-slate */
+}
+
+:root.light {
+  --background: var(--guardian-bg);
+  --foreground: var(--guardian-text);
+  
+  --guardian-bg: #F1F5F9;        /* Light slate background */
+  --guardian-card: #FFFFFF;      /* Pure white card */
+  --guardian-border: #CBD5E1;    /* Light slate border */
+  --guardian-safe: #00C853;      /* Rich safety green for white background */
+  --guardian-warning: #E65100;   /* Rich amber warning */
+  --guardian-critical: #D50000;  /* Rich red */
+  --guardian-accent: #2962FF;    /* Rich blue */
+  --guardian-text: #0F172A;      /* Dark slate text */
+  --guardian-muted: #475569;     /* Slate-600 muted text */
+}
+
+body {
+  color: var(--guardian-text);
+  background-color: var(--guardian-bg);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--guardian-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--guardian-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--guardian-safe);
+}
+
+/* Glassmorphism panel helpers */
+.glass-panel {
+  background: rgba(14, 21, 36, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--guardian-border);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+:root.light .glass-panel {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid var(--guardian-border);
+}
+
+.glass-panel-glow {
+  box-shadow: 0 0 25px rgba(0, 230, 118, 0.15);
+  border: 1px solid var(--guardian-safe);
+}
+
+.glass-panel-sos {
+  box-shadow: 0 0 35px rgba(255, 23, 68, 0.25);
+  border: 1px solid var(--guardian-critical);
+}
+
+/* Pulse Glows */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(0, 230, 118, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(0, 230, 118, 0.6);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-sos {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 23, 68, 0.4);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 45px rgba(255, 23, 68, 0.8);
+    transform: scale(1.03);
+  }
+}
+
+.animate-pulse-sos {
+  animation: pulse-sos 1.5s infinite;
+}
+
+/* Leaflet Map overrides for premium dark theme */
+.leaflet-container {
+  background: var(--guardian-bg) !important;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.75rem;
+}
+
+.leaflet-bar a {
+  background-color: var(--guardian-card) !important;
+  color: var(--guardian-text) !important;
+  border-bottom: 1px solid var(--guardian-border) !important;
+}
+
+.leaflet-bar a:hover {
+  background-color: var(--guardian-border) !important;
+  color: var(--guardian-accent) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background-color: var(--guardian-card) !important;
+  color: var(--guardian-text) !important;
+  border: 1px solid var(--guardian-border);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3) !important;
+  border-radius: 0.5rem !important;
+}
+
+.leaflet-popup-tip {
+  background-color: var(--guardian-card) !important;
+  border: 1px solid var(--guardian-border);
+}
+
+/* Custom map routing paths styles */
+.leaflet-interactive {
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
