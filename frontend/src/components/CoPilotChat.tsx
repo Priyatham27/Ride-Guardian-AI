@@ -35,8 +35,10 @@ export default function CoPilotChat({
   useEffect(() => {
     async function loadSettings() {
       try {
+        const uid = localStorage.getItem("firebase_uid");
+        if (!uid) return;
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-        const res = await fetch(`${apiUrl}/api/user/settings`);
+        const res = await fetch(`${apiUrl}/api/user/settings?firebase_uid=${uid}`);
         if (res.ok) {
           const data = await res.json();
           if (data.full_name) {

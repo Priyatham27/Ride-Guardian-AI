@@ -13,9 +13,10 @@ class AnalyzeRequest(BaseModel):
     origin: str
     destination: str
     departure_time: str
-    fuel_capacity: float = 18.0
+    fuel_capacity: float = 15.0
     bike_type: str = "adventure"
-    user_id: str = "8683bbb2-73a8-4caa-a63f-9f2ba8861716"
+    firebase_uid: str = ""  # Used to resolve user_id
+    user_id: str = ""  # Legacy fallback
 
 class StartRequest(BaseModel):
     journey_id: str
@@ -23,8 +24,15 @@ class StartRequest(BaseModel):
 @router.post("/analyze")
 def api_analyze_journey(req: AnalyzeRequest):
     try:
+        # Resolve user_id from firebase_uid
+        user_id = req.user_id
+        if req.firebase_uid:
+            user = query_db("SELECT id FROM users WHERE firebase_uid = ?", (req.firebase_uid,), one=True)
+            if user:
+                user_id = user["id"]
+
         # Load user settings to get avg_mileage
-        settings = query_db("SELECT * FROM user_settings WHERE user_id = ?", (req.user_id,), one=True)
+        settings = query_db("SELECT * FROM user_settings WHERE user_id = ?", (user_id,), one=True)
         mileage = settings["avg_mileage_kmpl"] if settings else 25.0
         
         # Perform Route risk assessment
@@ -56,7 +64,7 @@ def api_analyze_journey(req: AnalyzeRequest):
             """,
             (
                 journey_id,
-                req.user_id,
+                user_id,
                 req.origin,
                 req.destination,
                 origin_lat,
@@ -87,18 +95,28 @@ def api_start_journey(req: StartRequest):
     if not journey:
         raise HTTPException(status_code=404, detail="Journey not found")
         
+    old_status = journey["status"]
+    
     # Update status to active
     execute_db(
         "UPDATE journeys SET status = ? WHERE id = ?",
         ("active", req.journey_id)
     )
     
-    # Pre-seed the first GPS ping at origin
-    ping_id = str(uuid.uuid4())
-    execute_db(
-        "INSERT INTO gps_pings (id, journey_id, lat, lon, speed_kmh) VALUES (?, ?, ?, ?, ?)",
-        (ping_id, req.journey_id, journey["origin_lat"], journey["origin_lon"], 0.0)
-    )
+    # If the journey is transitioning from 'emergency', resolve any active/unresolved incidents
+    if old_status == "emergency":
+        execute_db(
+            "UPDATE incidents SET resolved_at = ? WHERE journey_id = ? AND resolved_at IS NULL",
+            (datetime.now().isoformat(), req.journey_id)
+        )
+    
+    # Only insert the initial GPS ping at origin if transitioning from 'planned' (first time starting)
+    if old_status == "planned":
+        ping_id = str(uuid.uuid4())
+        execute_db(
+            "INSERT INTO gps_pings (id, journey_id, lat, lon, speed_kmh) VALUES (?, ?, ?, ?, ?)",
+            (ping_id, req.journey_id, journey["origin_lat"], journey["origin_lon"], 0.0)
+        )
     
     return {"success": True, "status": "active"}
 

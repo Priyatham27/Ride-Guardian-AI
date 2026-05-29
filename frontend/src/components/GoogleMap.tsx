@@ -9,7 +9,9 @@ interface MapProps {
   currentCoords?: [number, number];
   fuelStations?: any[];
   nearestHospital?: any;
+  sessionKey?: string; // Force remount when a new ride session starts
 }
+
 
 // Global script loader to prevent duplicate script tags
 let scriptLoadingPromise: Promise<void> | null = null;
@@ -40,7 +42,8 @@ export default function GoogleMap({
   safetyReport,
   currentCoords,
   fuelStations = [],
-  nearestHospital
+  nearestHospital,
+  sessionKey
 }: MapProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<any>(null);
@@ -53,6 +56,20 @@ export default function GoogleMap({
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
   const mapId = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "8430579c0575cde8259d1103";
+
+  // Reset map when sessionKey changes (new ride session)
+  useEffect(() => {
+    if (sessionKey && map) {
+      // Clear all overlays and destroy the map instance
+      polylinesRef.current.forEach((p) => { try { p.setMap(null); } catch {} });
+      polylinesRef.current = [];
+      markersRef.current.forEach((m) => { try { m.setMap(null); } catch {} });
+      markersRef.current = [];
+      setMap(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionKey]);
+
 
   // 1. Load the script
   useEffect(() => {

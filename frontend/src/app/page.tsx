@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { PlusCircle, Shield, History, MapPin, Compass, Settings, CheckCircle2, ChevronRight, Sun, Moon } from "lucide-react";
+import {
+  PlusCircle, Shield, History, Settings, CheckCircle2,
+  ChevronRight, Sun, Moon, LogOut, FileText
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface JourneySummary {
   id: string;
@@ -18,10 +22,19 @@ interface JourneySummary {
   };
 }
 
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "Good morning";
+  if (hour >= 12 && hour < 17) return "Good afternoon";
+  if (hour >= 17 && hour < 21) return "Good evening";
+  return "Good night";
+}
+
 export default function Home() {
+  const { currentUser, userProfile, loading: authLoading, logout } = useAuth();
   const [history, setHistory] = useState<JourneySummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [safetyScore, setSafetyScore] = useState(88);
+  const [safetyScore, setSafetyScore] = useState<number | null>(null);
   const [theme, setTheme] = useState("dark");
 
   useEffect(() => {
@@ -48,64 +61,63 @@ export default function Home() {
   };
 
   useEffect(() => {
+    if (!currentUser) return;
+
     async function fetchJourneys() {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-        const res = await fetch(`${apiUrl}/api/user/journeys`);
+        const uid = localStorage.getItem("firebase_uid");
+        const res = await fetch(`${apiUrl}/api/user/journeys?firebase_uid=${uid}`);
         if (res.ok) {
           const data = await res.json();
           setHistory(Array.isArray(data) ? data : []);
-          
-          // Calculate dynamic safety score average from completed runs
-          const completed = (Array.isArray(data) ? data : []).filter((j: any) => j?.status === "completed" && j?.summary && j?.summary?.safety_rating);
+
+          const completed = (Array.isArray(data) ? data : []).filter(
+            (j: any) => j?.status === "completed" && j?.summary?.safety_rating
+          );
           if (completed.length > 0) {
-            const avg = completed.reduce((sum: number, curr: any) => sum + (curr?.summary?.safety_rating || 0), 0) / completed.length;
+            const avg =
+              completed.reduce(
+                (sum: number, curr: any) => sum + (curr?.summary?.safety_rating || 0),
+                0
+              ) / completed.length;
             setSafetyScore(Math.round(avg));
           }
         }
       } catch (err) {
         console.error("Could not fetch journeys:", err);
-        // Pre-seed mock history for first-load visuals
-        setHistory([
-          {
-            id: "mock-j-1",
-            origin: "Hyderabad",
-            destination: "Warangal",
-            departure_time: "2026-05-24T18:00:00",
-            status: "completed",
-            created_at: "2026-05-24 18:00:00",
-            ended_at: "2026-05-24 21:30:00",
-            summary: {
-              narrative: "Completed 145 km route safely. Monitored minor rain near Yadagirigutta. Rider kept steady speed and refueled at Aler.",
-              safety_rating: 94
-            }
-          },
-          {
-            id: "mock-j-2",
-            origin: "Hyderabad",
-            destination: "Srisailam Forest",
-            departure_time: "2026-05-18T06:00:00",
-            status: "completed",
-            created_at: "2026-05-18 06:00:00",
-            ended_at: "2026-05-18 11:45:00",
-            summary: {
-              narrative: "Completed forest section. Warned of winding ghat curves. Inactivity trigger was checked once at Srisailam dam and resolved by rider confirmation.",
-              safety_rating: 82
-            }
-          }
-        ]);
+        setHistory([]);
       } finally {
         setLoading(false);
       }
     }
     fetchJourneys();
-  }, []);
+  }, [currentUser]);
+
+  // Show a loading splash while auth resolves
+  if (authLoading) {
+    return (
+      <main className="min-h-screen bg-guardian-bg flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-guardian-accent border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs text-guardian-muted">Loading Guardian...</p>
+        </div>
+      </main>
+    );
+  }
+
+  const displayName = userProfile?.full_name || currentUser?.displayName || "Rider";
+  const firstName = displayName.split(" ")[0];
+  const greeting = getGreeting();
+
+  // Emergency contacts count for status indicator
+  const contactsCount = 0; // Will be updated from settings API if needed
 
   return (
-    <main className="min-h-screen bg-guardian-bg text-guardian-text px-4 py-8 max-w-md mx-auto flex flex-col justify-between">
-      
-      {/* Header Profile Section */}
-      <div className="flex justify-between items-center mb-8">
+    <main className="min-h-screen bg-guardian-bg text-guardian-text px-4 py-8 max-w-md mx-auto flex flex-col">
+
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-guardian-accent to-guardian-safe flex items-center justify-center shadow-lg">
             <Shield size={16} className="text-slate-950" />
@@ -128,27 +140,46 @@ export default function Home() {
           <Link href="/settings" id="btn-settings-nav" className="p-2 rounded-lg bg-guardian-card border border-guardian-border text-guardian-muted hover:text-guardian-accent transition">
             <Settings size={16} />
           </Link>
+          <button
+            type="button"
+            onClick={logout}
+            id="btn-logout"
+            className="p-2 rounded-lg bg-guardian-card border border-guardian-border text-guardian-muted hover:text-guardian-critical transition"
+            aria-label="Logout"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </div>
 
-      {/* Safety Score Card */}
-      <section className="bg-guardian-card border border-guardian-border rounded-2xl p-6 mb-6 glass-panel flex items-center justify-between relative overflow-hidden">
-        {/* Background glow */}
-        <div className="absolute -top-12 -right-12 w-24 h-24 bg-guardian-safe/10 rounded-full blur-xl"></div>
-        <div>
-          <span className="text-[10px] text-guardian-muted uppercase font-bold tracking-wider">Rider Safety Score</span>
-          <h2 className="text-3xl font-extrabold font-mono mt-1 text-guardian-safe">{safetyScore}%</h2>
-          <p className="text-[11px] text-guardian-muted mt-2 max-w-[200px]">
-            Calculated over your last journeys based on speed, fatigue, and route response.
-          </p>
-        </div>
-        <div className="flex items-center justify-center w-20 h-20 rounded-full border-4 border-guardian-border bg-slate-950/60 font-bold font-mono text-guardian-safe">
-          {safetyScore >= 90 ? "A+" : (safetyScore >= 80 ? "A" : "B")}
+      {/* Greeting Banner */}
+      <section className="mb-6">
+        <div className="bg-gradient-to-r from-guardian-accent/10 to-guardian-safe/10 border border-guardian-accent/20 rounded-2xl px-5 py-4">
+          <p className="text-xs text-guardian-muted font-medium uppercase tracking-wider mb-0.5">{greeting}</p>
+          <h2 className="text-xl font-extrabold text-guardian-text tracking-tight">{firstName} 👋</h2>
+          <p className="text-[11px] text-guardian-muted mt-1">Stay safe on every ride. Your guardian is active.</p>
         </div>
       </section>
 
-      {/* Onboarding / Status Indicators */}
-      <section className="grid grid-cols-2 gap-3 mb-8">
+      {/* Safety Score Card */}
+      {safetyScore !== null && (
+        <section className="bg-guardian-card border border-guardian-border rounded-2xl p-6 mb-5 glass-panel flex items-center justify-between relative overflow-hidden">
+          <div className="absolute -top-12 -right-12 w-24 h-24 bg-guardian-safe/10 rounded-full blur-xl" />
+          <div>
+            <span className="text-[10px] text-guardian-muted uppercase font-bold tracking-wider">Rider Safety Score</span>
+            <p className="text-3xl font-extrabold font-mono mt-1 text-guardian-safe">{safetyScore}%</p>
+            <p className="text-[11px] text-guardian-muted mt-2 max-w-[200px]">
+              Calculated from your completed journeys based on speed, fatigue, and route response.
+            </p>
+          </div>
+          <div className="flex items-center justify-center w-20 h-20 rounded-full border-4 border-guardian-border bg-slate-950/60 font-bold font-mono text-guardian-safe">
+            {safetyScore >= 90 ? "A+" : safetyScore >= 80 ? "A" : "B"}
+          </div>
+        </section>
+      )}
+
+      {/* Status Indicators */}
+      <section className="grid grid-cols-2 gap-3 mb-6">
         <div className="bg-guardian-card/40 border border-guardian-border/60 rounded-xl p-3.5 flex items-center gap-2.5">
           <CheckCircle2 size={16} className="text-guardian-safe" />
           <div>
@@ -160,13 +191,13 @@ export default function Home() {
           <CheckCircle2 size={16} className="text-guardian-safe" />
           <div>
             <span className="block text-[10px] font-bold text-guardian-text">SOS Contacts</span>
-            <span className="text-[9px] text-guardian-muted">2 numbers linked</span>
+            <span className="text-[9px] text-guardian-muted">Emergency setup</span>
           </div>
         </div>
       </section>
 
-      {/* Start New Journey Prompt */}
-      <section className="mb-8">
+      {/* Start New Journey */}
+      <section className="mb-6">
         <Link
           href="/planner"
           id="btn-start-ride"
@@ -187,7 +218,7 @@ export default function Home() {
         {loading ? (
           <div className="space-y-3">
             {[1, 2].map((i) => (
-              <div key={i} className="h-24 bg-guardian-card/30 rounded-xl animate-pulse"></div>
+              <div key={i} className="h-24 bg-guardian-card/30 rounded-xl animate-pulse" />
             ))}
           </div>
         ) : history.length === 0 ? (
@@ -196,13 +227,13 @@ export default function Home() {
           </div>
         ) : (
           <div className="space-y-3">
-            {(history || []).map((j) => (
+            {history.map((j) => (
               <div
                 key={j.id}
-                className="bg-guardian-card border border-guardian-border rounded-xl p-4 hover:border-guardian-border/80 transition relative"
+                className="bg-guardian-card border border-guardian-border rounded-xl p-4 hover:border-guardian-border/80 transition"
               >
                 <div className="flex justify-between items-start mb-2">
-                  <div className="flex items-center gap-1 text-xs font-bold text-slate-100">
+                  <div className="flex items-center gap-1 text-xs font-bold text-guardian-text">
                     <span>{j.origin}</span>
                     <ChevronRight size={12} className="text-guardian-muted" />
                     <span>{j.destination}</span>
@@ -213,78 +244,78 @@ export default function Home() {
                     </span>
                   )}
                 </div>
-                
+
                 <p className="text-[11px] text-guardian-muted line-clamp-2 leading-relaxed">
                   {j.summary?.narrative || "Pre-ride risk report analyzed. Journey record created."}
                 </p>
 
-                <div className="flex justify-between items-center mt-3 pt-2 border-t border-guardian-border/40 text-[9px] text-guardian-muted">
-                  <span>{new Date(j.departure_time).toLocaleDateString(undefined, {month: 'short', day: 'numeric', year: 'numeric'})}</span>
-                  <span className={`capitalize font-bold ${
-                    j.status === 'completed' ? 'text-guardian-safe' : (j.status === 'active' ? 'text-guardian-accent' : 'text-guardian-muted')
+                <div className="flex justify-between items-center mt-3 pt-2 border-t border-guardian-border/40">
+                  <span className="text-[9px] text-guardian-muted">
+                    {new Date(j.departure_time).toLocaleDateString(undefined, {
+                      month: "short", day: "numeric", year: "numeric",
+                    })}
+                  </span>
+                  <span className={`text-[9px] capitalize font-bold ${
+                    j.status === "completed" ? "text-guardian-safe"
+                    : j.status === "active" ? "text-guardian-accent"
+                    : "text-guardian-muted"
                   }`}>
                     {j.status}
                   </span>
                 </div>
-                
-                {j.status === "active" && (
-                  <Link
-                    href={`/active/${j.id}`}
-                    id={`btn-resume-${j.id}`}
-                    className="absolute inset-0 bg-guardian-accent/5 hover:bg-guardian-accent/10 border border-guardian-accent/20 rounded-xl flex items-center justify-end pr-4 transition"
-                  >
-                    <span className="bg-guardian-accent text-white font-bold text-[10px] px-2 py-1 rounded shadow-md uppercase tracking-wider animate-pulse">
-                      Resume active ride
-                    </span>
-                  </Link>
-                )}
 
-                {j.status === "completed" && (
-                  <Link
-                    href={`/summary/${j.id}`}
-                    id={`btn-view-summary-${j.id}`}
-                    className="absolute inset-0 bg-transparent hover:bg-guardian-safe/[0.02] rounded-xl flex items-center justify-end pr-4 transition group"
-                  >
-                    <span className="opacity-0 group-hover:opacity-100 bg-guardian-safe/10 border border-guardian-safe/30 text-guardian-safe font-bold text-[10px] px-2.5 py-1.5 rounded transition uppercase tracking-wider">
-                      View Summary
-                    </span>
-                  </Link>
-                )}
+                {/* Always-visible action buttons */}
+                <div className="mt-3 flex gap-2">
+                  {j.status === "active" && (
+                    <Link
+                      href={`/active/${j.id}`}
+                      id={`btn-resume-${j.id}`}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-guardian-accent text-white font-bold text-[10px] uppercase tracking-wider animate-pulse shadow"
+                    >
+                      Resume Active Ride
+                    </Link>
+                  )}
 
-                {j.status === "planned" && (
-                  <Link
-                    href={`/report/${j.id}`}
-                    id={`btn-view-report-${j.id}`}
-                    className="absolute inset-0 bg-transparent hover:bg-guardian-accent/[0.02] rounded-xl flex items-center justify-end pr-4 transition group"
-                  >
-                    <span className="opacity-0 group-hover:opacity-100 bg-guardian-accent/10 border border-guardian-accent/30 text-guardian-accent font-bold text-[10px] px-2.5 py-1.5 rounded transition uppercase tracking-wider">
+                  {j.status === "completed" && (
+                    <Link
+                      href={`/summary/${j.id}`}
+                      id={`btn-view-summary-${j.id}`}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-guardian-safe/10 border border-guardian-safe/30 text-guardian-safe font-bold text-[10px] uppercase tracking-wider hover:bg-guardian-safe/20 transition"
+                    >
+                      <FileText size={11} /> View Summary
+                    </Link>
+                  )}
+
+                  {j.status === "planned" && (
+                    <Link
+                      href={`/report/${j.id}`}
+                      id={`btn-view-report-${j.id}`}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-guardian-accent/10 border border-guardian-accent/30 text-guardian-accent font-bold text-[10px] uppercase tracking-wider hover:bg-guardian-accent/20 transition"
+                    >
                       View Analysis
-                    </span>
-                  </Link>
-                )}
+                    </Link>
+                  )}
 
-                {j.status === "emergency" && (
-                  <Link
-                    href={`/sos/${j.id}`}
-                    id={`btn-view-sos-${j.id}`}
-                    className="absolute inset-0 bg-guardian-critical/5 hover:bg-guardian-critical/10 border border-guardian-critical/20 rounded-xl flex items-center justify-end pr-4 transition"
-                  >
-                    <span className="bg-guardian-critical text-white font-bold text-[10px] px-2.5 py-1.5 rounded shadow-md uppercase tracking-wider animate-pulse">
+                  {j.status === "emergency" && (
+                    <Link
+                      href={`/sos/${j.id}`}
+                      id={`btn-view-sos-${j.id}`}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-guardian-critical text-white font-bold text-[10px] uppercase tracking-wider animate-pulse shadow"
+                    >
                       View SOS Status
-                    </span>
-                  </Link>
-                )}
+                    </Link>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         )}
       </section>
 
-      {/* Footer Branding */}
-      <footer className="text-center text-[10px] text-guardian-muted/50 mt-12 pt-4 border-t border-guardian-border/20">
-        RideGuardian AI Sentinel v1.0.0 • Hackathon MVP Sprint 2026
+      {/* Footer */}
+      <footer className="text-center text-[10px] text-guardian-muted/50 mt-10 pt-4 border-t border-guardian-border/20">
+        RideGuardian AI Sentinel v2.0 • Production Build
       </footer>
-
     </main>
   );
 }

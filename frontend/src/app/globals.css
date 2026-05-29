@@ -41,6 +41,40 @@ body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
+/* Ensure form elements always have visible text */
+input,
+select,
+textarea {
+  color: var(--guardian-text) !important;
+  background-color: var(--guardian-card);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--guardian-muted);
+  opacity: 0.6;
+}
+
+/* Fix date/time input color in both themes */
+input[type="datetime-local"],
+input[type="date"],
+input[type="time"] {
+  color-scheme: dark;
+}
+
+:root.light input[type="datetime-local"],
+:root.light input[type="date"],
+:root.light input[type="time"] {
+  color-scheme: light;
+}
+
+/* Select option text */
+select option {
+  background-color: var(--guardian-card);
+  color: var(--guardian-text);
+}
+
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
