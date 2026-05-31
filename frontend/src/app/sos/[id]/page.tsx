@@ -21,6 +21,15 @@ interface IncidentStatus {
   } | null;
 }
 
+const timelineEvents = [
+  { time: "T+0s", text: "Accelerometer anomaly detected" },
+  { time: "T+1s", text: "Rider warning modal spawned" },
+  { time: "T+30s", text: "No response from rider. Escalating to SOS." },
+  { time: "T+32s", text: "Satellite GPS coordinate locked." },
+  { time: "T+35s", text: "Emergency dispatch emails sent to contacts." },
+  { time: "T+40s", text: "Surfacing closest emergency medical units." }
+];
+
 export default function SOSScreen() {
   const params = useParams();
   const router = useRouter();
@@ -29,15 +38,6 @@ export default function SOSScreen() {
   const [statusData, setStatusData] = useState<IncidentStatus | null>(null);
   const [timelineStep, setTimelineStep] = useState(0);
   const [loading, setLoading] = useState(true);
-
-  const timelineEvents = [
-    { time: "T+0s", text: "Accelerometer anomaly detected" },
-    { time: "T+1s", text: "Rider warning modal spawned" },
-    { time: "T+30s", text: "No response from rider. Escalating to SOS." },
-    { time: "T+32s", text: "Satellite GPS coordinate locked." },
-    { time: "T+35s", text: "Emergency dispatch emails sent to contacts." },
-    { time: "T+40s", text: "Surfacing closest emergency medical units." }
-  ];
 
   // Fetch emergency status from backend
   useEffect(() => {

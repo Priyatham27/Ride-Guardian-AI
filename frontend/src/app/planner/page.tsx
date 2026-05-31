@@ -11,6 +11,15 @@ interface FavouritePlace {
   address: string;
 }
 
+const loadingSteps = [
+  "Receiving ride parameters & checking rider profile...",
+  "Querying maps for coordinate geometries...",
+  "Sampling weather alerts at projected waypoint ETAs...",
+  "Cross-referencing highway fuel stations for gaps...",
+  "Synthesizing road quality & night isolation risks...",
+  "Drafting safety narratives with AI analyst...",
+];
+
 export default function Planner() {
   const router = useRouter();
   const { currentUser } = useAuth();
@@ -35,15 +44,6 @@ export default function Planner() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [settingsLoading, setSettingsLoading] = useState(true);
-
-  const loadingSteps = [
-    "Receiving ride parameters & checking rider profile...",
-    "Querying maps for coordinate geometries...",
-    "Sampling weather alerts at projected waypoint ETAs...",
-    "Cross-referencing highway fuel stations for gaps...",
-    "Synthesizing road quality & night isolation risks...",
-    "Drafting safety narratives with AI analyst...",
-  ];
 
   // Load bike settings from backend
   useEffect(() => {

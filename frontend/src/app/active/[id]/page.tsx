@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ShieldAlert, AlertOctagon, HelpCircle, StopCircle, PlayCircle, ToggleLeft, ToggleRight, Sun, Moon } from "lucide-react";
 import Map from "@/components/Map";
@@ -174,6 +174,29 @@ export default function ActiveJourney() {
     };
   }, [isSimulating, routeData, journeyId]);
 
+  const triggerSOS = useCallback(async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+      const res = await fetch(`${apiUrl}/api/emergency/trigger`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          journey_id: journeyId,
+          trigger_type: inactivityAlarm ? "inactivity" : "manual_sos",
+          lat: currentCoords[0],
+          lon: currentCoords[1]
+        })
+      });
+      
+      if (res.ok) {
+        router.push(`/sos/${journeyId}`);
+      }
+    } catch (err) {
+      console.error(err);
+      router.push(`/sos/${journeyId}`); // client-side fallback
+    }
+  }, [journeyId, inactivityAlarm, currentCoords, router]);
+
   // Handle Inactivity Alarm Countdown
   useEffect(() => {
     if (inactivityAlarm) {
@@ -201,30 +224,7 @@ export default function ActiveJourney() {
     return () => {
       if (alarmTimerRef.current) clearInterval(alarmTimerRef.current);
     };
-  }, [inactivityAlarm]);
-
-  const triggerSOS = async () => {
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-      const res = await fetch(`${apiUrl}/api/emergency/trigger`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          journey_id: journeyId,
-          trigger_type: inactivityAlarm ? "inactivity" : "manual_sos",
-          lat: currentCoords[0],
-          lon: currentCoords[1]
-        })
-      });
-      
-      if (res.ok) {
-        router.push(`/sos/${journeyId}`);
-      }
-    } catch (err) {
-      console.error(err);
-      router.push(`/sos/${journeyId}`); // client-side fallback
-    }
-  };
+  }, [inactivityAlarm, triggerSOS]);
 
   const handleEndJourney = async () => {
     try {
