@@ -44,9 +44,25 @@ def _get_user_by_firebase_uid(firebase_uid: str):
 
 @router.get("/settings")
 def api_get_settings(firebase_uid: str):
-    user_id = _get_user_by_firebase_uid(firebase_uid)
+    user = query_db("SELECT id, full_name, email, mobile_number FROM users WHERE firebase_uid = ?", (firebase_uid,), one=True)
+    if not user:
+        return {
+            "user_id": "",
+            "full_name": "",
+            "email": "",
+            "mobile_number": "",
+            "bike_name": "",
+            "bike_type": "adventure",
+            "petrol_type": "Petrol (Regular)",
+            "tank_capacity_liters": 15.0,
+            "avg_mileage_kmpl": 25.0,
+            "inactivity_threshold_min": 8,
+            "emergency_contacts": [],
+            "favourite_places": [],
+        }
+    
+    user_id = user["id"]
     settings = query_db("SELECT * FROM user_settings WHERE user_id = ?", (user_id,), one=True)
-    user = query_db("SELECT full_name, email, mobile_number FROM users WHERE id = ?", (user_id,), one=True)
 
     if not settings:
         # Return defaults if no settings row yet
@@ -153,7 +169,11 @@ def api_update_settings(req: SettingsUpdateRequest):
 
 @router.get("/journeys")
 def api_list_journeys(firebase_uid: str):
-    user_id = _get_user_by_firebase_uid(firebase_uid)
+    user = query_db("SELECT id FROM users WHERE firebase_uid = ?", (firebase_uid,), one=True)
+    if not user:
+        return []
+        
+    user_id = user["id"]
     journeys = query_db(
         "SELECT id, origin, destination, departure_time, status, created_at, ended_at, ai_narrative FROM journeys WHERE user_id = ? ORDER BY created_at DESC",
         (user_id,)

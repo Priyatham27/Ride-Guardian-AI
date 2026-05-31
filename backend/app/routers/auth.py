@@ -153,8 +153,15 @@ def api_get_profile(firebase_uid: str):
         (firebase_uid,), one=True
     )
     if not user:
-        # User not in DB yet (just registered via Firebase but backend not called yet)
-        raise HTTPException(status_code=404, detail="Profile not found")
+        # Return default empty profile instead of 404 to avoid console errors in frontend on first load
+        return {
+            "uid": firebase_uid,
+            "user_id": "",
+            "full_name": "",
+            "email": "",
+            "mobile_number": "",
+            "has_profile": False,
+        }
 
     return {
         "uid": firebase_uid,
